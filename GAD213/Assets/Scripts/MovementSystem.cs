@@ -23,17 +23,22 @@ public class MovementSystem : MonoBehaviour
     private RaycastHit slopeHit;
     private bool exitingSlope;
     public Sliding playerSlide;
+    public KeyCode slamKey = KeyCode.F;
+    public float slamForce = 50f;           
+    public float slamGravityMultiplier = 5f;
+    private bool isSlamming;
+    public int maxJumps = 2; 
+    private int jumpsLeft;
 
-    // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
 
         readyToJump = true;
+        jumpsLeft = maxJumps;
     }
 
-    // Update is called once per frame
     void Update()
     {
         //ground check
@@ -49,15 +54,37 @@ public class MovementSystem : MonoBehaviour
         else 
         {
             rb.drag = 0;
-            rb.AddForce(Vector3.down * 5f, ForceMode.Force); // add extra downward pull
+            rb.AddForce(Vector3.down * 5f, ForceMode.Force);
+        }
+        grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, ground);
+
+        MovementInput();
+        SpeedControl();
+
+        rb.drag = grounded ? groundDrag : 0f;
+
+        //stop the slam when we hit the ground
+        if (isSlamming && grounded)
+        {
+            isSlamming = false;
+            
         }
 
+        //reset jumps when grounded
+        if (grounded && jumpsLeft < maxJumps)
+            jumpsLeft = maxJumps;
 
     }
 
     private void FixedUpdate()
     {
         MovePlayer();
+
+        //handle ground slam force in physics step
+        if (isSlamming && !grounded)
+        {
+            rb.AddForce(Vector3.down * slamForce * slamGravityMultiplier, ForceMode.Acceleration);
+        }
     }
 
     private void MovementInput()
@@ -72,6 +99,20 @@ public class MovementSystem : MonoBehaviour
 
             Jump();
 
+            Invoke(nameof(ResetJump), jumpCooldown);
+        }
+
+        // Ground Slam input
+        if (Input.GetKeyDown(slamKey) && !grounded)
+        {
+            StartSlam();
+        }
+
+        //double jump input
+        if (Input.GetKeyDown(jumpKey) && readyToJump && jumpsLeft > 0)
+        {
+            readyToJump = false;
+            Jump();
             Invoke(nameof(ResetJump), jumpCooldown);
         }
     }
@@ -132,6 +173,7 @@ public class MovementSystem : MonoBehaviour
 
     }
 
+    //for normal jumps and double jumps
     private void Jump()
     {
         exitingSlope = true;
@@ -140,6 +182,8 @@ public class MovementSystem : MonoBehaviour
         rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
 
         rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+
+        jumpsLeft--;
 
     }
 
@@ -150,6 +194,7 @@ public class MovementSystem : MonoBehaviour
         exitingSlope = false;
     }
 
+    //checking to see if player is on a slope
     public bool OnSlope()
     {
         if (Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight * 0.5f + 0.3f))
@@ -163,5 +208,22 @@ public class MovementSystem : MonoBehaviour
     public Vector3 GetSlopeMovementDirection(Vector3 direction)
     {
         return Vector3.ProjectOnPlane(direction, slopeHit.normal).normalized;
+    }
+
+    //when called the player starts falling down fast
+    private void StartSlam()
+    {
+        isSlamming = true;
+        rb.velocity = new Vector3(0, -slamForce, 0); 
+    }
+
+    //can cancel the slam with slide
+    public void CancelSlam() 
+    {
+        if (isSlamming)
+        {
+            isSlamming = false;
+            rb.AddForce(orientation.forward * moveSpeed * 2f, ForceMode.Impulse);
+        }
     }
 }

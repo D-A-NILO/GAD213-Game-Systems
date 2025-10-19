@@ -22,7 +22,6 @@ public class Sliding : MonoBehaviour
     private float lastDesiredMoveSpeed;
     public float slideSpeed;
 
-    // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -31,7 +30,6 @@ public class Sliding : MonoBehaviour
         startYScale = playerObj.localScale.y;
     }
 
-    // Update is called once per frame
     void Update()
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
@@ -53,13 +51,14 @@ public class Sliding : MonoBehaviour
         if (sliding)
         {
             SlidingMovement();
-            slideTimer -= Time.deltaTime;
         }
     }
 
     private void StartSlide()
     {
         sliding = true;
+
+        playerMovement.CancelSlam();
 
         playerObj.localScale = new Vector3(playerObj.localScale.x, slideYScale, playerObj.localScale.z);
         rb.AddForce(Vector3.down * 5f, ForceMode.Force);
@@ -94,6 +93,11 @@ public class Sliding : MonoBehaviour
         }
 
         slideTimer -= Time.deltaTime;
+
+        if (slideTimer <= 0)
+        { 
+            ExitSlide();
+        }
         lastDesiredMoveSpeed = desiredMoveSpeed;
         
     }

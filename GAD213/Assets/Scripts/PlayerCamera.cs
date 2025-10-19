@@ -1,27 +1,24 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class PlayerCamera : MonoBehaviour
 {
     public float sensX;
     public float sensY;
-
     public Transform orientation;
-
     public float xRotation;
     public float yRotation;
 
     public Transform cameraPosition;
-    // Start is called before the first frame update
+    //locks the cursor at the start of the game and makes it invisible
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
-    // Update is called once per frame
+    //can use the mouse to move the camera
     void Update()
     {
         transform.position = cameraPosition.position;
