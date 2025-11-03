@@ -26,7 +26,7 @@ public class MovementSystem : MonoBehaviour
     public KeyCode slamKey = KeyCode.F;
     public float slamForce = 50f;           
     public float slamGravityMultiplier = 5f;
-    private bool isSlamming;
+    public bool isSlamming;
     public int maxJumps = 2; 
     private int jumpsLeft;
 
@@ -58,8 +58,6 @@ public class MovementSystem : MonoBehaviour
         }
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, ground);
 
-        MovementInput();
-        SpeedControl();
 
         rb.drag = grounded ? groundDrag : 0f;
 
