@@ -17,11 +17,13 @@ public class Sliding : MonoBehaviour
     public KeyCode slideKey = KeyCode.LeftControl;
     private float horizontalInput;
     private float verticalInput;
-    bool sliding;
+    public bool sliding;
     private float desiredMoveSpeed;
     private float lastDesiredMoveSpeed;
     public float slideSpeed;
-
+    public float slideJumpWindow = 0.2f;  // how long after a slide you can do a boosted jump
+    public bool canSlideJump;
+    private float slideJumpTimer;
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -98,7 +100,16 @@ public class Sliding : MonoBehaviour
         { 
             ExitSlide();
         }
+
+        // If window is active, countdown timer
+        if (canSlideJump)
+        {
+            slideJumpTimer -= Time.deltaTime;
+            if (slideJumpTimer <= 0f)
+                canSlideJump = false;
+        }
         lastDesiredMoveSpeed = desiredMoveSpeed;
+
         
     }
 
@@ -124,5 +135,17 @@ public class Sliding : MonoBehaviour
         }
 
         playerMovement.moveSpeed = desiredMoveSpeed;
+    }
+
+    public void BoostSlide(float extraForce, float duration)
+    {
+        StartCoroutine(SlideSpeedBoost(extraForce, duration));
+    }
+
+    private IEnumerator SlideSpeedBoost(float extraForce, float duration)
+    {
+        slideForce += extraForce; // increase slide force
+        yield return new WaitForSeconds(duration);
+        slideForce -= extraForce; // revert back to normal
     }
 }

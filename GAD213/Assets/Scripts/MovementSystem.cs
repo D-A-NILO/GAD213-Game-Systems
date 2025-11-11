@@ -29,12 +29,16 @@ public class MovementSystem : MonoBehaviour
     public bool isSlamming;
     public int maxJumps = 2; 
     private int jumpsLeft;
+    public float baseSpeed;
+    private Sliding slide;
+    public float slideJumpBoost = 1.5f;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        slide = GetComponent<Sliding>();
         rb.freezeRotation = true;
-
+        baseSpeed = moveSpeed;
         readyToJump = true;
         jumpsLeft = maxJumps;
     }
@@ -54,7 +58,7 @@ public class MovementSystem : MonoBehaviour
         else 
         {
             rb.drag = 0;
-            rb.AddForce(Vector3.down * 5f, ForceMode.Force);
+            rb.AddForce(Vector3.down * 4f, ForceMode.Force);
         }
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, ground);
 
@@ -179,7 +183,16 @@ public class MovementSystem : MonoBehaviour
         //reset y value
         rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
 
-        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+        float finalJumpForce = jumpForce;
+
+        // If player recently stopped sliding, boost their jump
+        if (slide != null && slide.canSlideJump)
+        {
+            finalJumpForce *= slideJumpBoost;
+            slide.canSlideJump = false; // use it once
+        }
+
+        rb.AddForce(Vector3.up * finalJumpForce, ForceMode.Impulse);
 
         jumpsLeft--;
 
