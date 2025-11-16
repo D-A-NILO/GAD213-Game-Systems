@@ -2,8 +2,5 @@ using UnityEngine;
 
 public interface IInteractable 
 {
-    void onPlayerEnter(GameObject player)
-    { 
-        
-    }
+    void onPlayerEnter(GameObject player);
 }

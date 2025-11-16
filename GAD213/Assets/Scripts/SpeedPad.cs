@@ -9,20 +9,16 @@ public class SpeedPad : MonoBehaviour, IInteractable
 
     private Coroutine activeBoost;
 
-    public void onPlayerEnter()
-    { 
-        
-    }
-    private void OnTriggerEnter(Collider other)
+    //when the player touches object applies speed boost
+    //it also checks if the player already has the speed boost active and makes sure it doesnt trigger again so that the player can't stack speed boosts
+    public void onPlayerEnter(GameObject player)
     {
-        if (!other.CompareTag("Player")) return;
-
-        MovementSystem move = other.GetComponent<MovementSystem>();
-        Sliding slide = other.GetComponent<Sliding>();
+        MovementSystem move = player.GetComponent<MovementSystem>();
+        Sliding slide = player.GetComponent<Sliding>();
 
         if (move != null)
         {
-            // Stop old boost if one is already running
+            //stop old boost if one is already running
             if (activeBoost != null)
                 StopCoroutine(activeBoost);
 
@@ -30,12 +26,22 @@ public class SpeedPad : MonoBehaviour, IInteractable
         }
     }
 
+    //when player triggers, call the onPlayerEnter function
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            onPlayerEnter(other.gameObject);
+        }
+    }
+
+    //applies temporary speed boost, then resets it
     private IEnumerator ApplySpeedBoost(MovementSystem move, Sliding slide)
     {
-        float baseSpeed = move.baseSpeed; // <-- store permanent base speed instead
+        float baseSpeed = move.baseSpeed;
         move.moveSpeed = baseSpeed + speedBoost;
 
-        // If player is sliding, boost slide force as well
+        //if player is sliding, boost slide force as well
         if (slide != null && slide.sliding)
         {
             slide.BoostSlide(speedBoost * 0.5f, duration);
@@ -43,7 +49,7 @@ public class SpeedPad : MonoBehaviour, IInteractable
 
         yield return new WaitForSeconds(duration);
 
-        // Reset to base speed, not last "original" snapshot
+        //reset to base speed
         move.moveSpeed = baseSpeed;
 
         activeBoost = null;

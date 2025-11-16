@@ -2,22 +2,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SlowPad : MonoBehaviour
+public class SlowPad : MonoBehaviour, IInteractable
 {
-    public float slowAmount = 10f; // how much to reduce speed
+    public float slowAmount = 10f;
     public float duration = 2f;
 
     private Coroutine activeEffect;
 
-    private void OnTriggerEnter(Collider other)
+    //when player touches object apply slowness, if player is already affected by slowness dont apply again to prevent the effect stacking
+    public void onPlayerEnter(GameObject player)
     {
-        if (!other.CompareTag("Player")) return;
-
-        MovementSystem move = other.GetComponent<MovementSystem>();
-        Sliding slide = other.GetComponent<Sliding>();
+        MovementSystem move = player.GetComponent<MovementSystem>();
+        Sliding slide = player.GetComponent<Sliding>();
 
         if (move != null)
         {
+            //stop old boost if one is already running
             if (activeEffect != null)
                 StopCoroutine(activeEffect);
 
@@ -25,14 +25,24 @@ public class SlowPad : MonoBehaviour
         }
     }
 
+    //when player triggers, call onPlayerEnter function
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            onPlayerEnter(other.gameObject);
+        }
+    }
+
+    //applies temporary slowness, then resets it
     private IEnumerator ApplySlow(MovementSystem move, Sliding slide)
     {
         float baseSpeed = move.baseSpeed;
 
-        // Apply slow (clamp so it doesn’t go below a minimum speed)
+        //Apply slow, clamp so it doesn’t go below basespeed
         move.moveSpeed = Mathf.Max(1f, baseSpeed - slowAmount);
 
-        // If sliding, reduce slide force too
+        //if sliding, reduce slide force too
         if (slide != null && slide.sliding)
         {
             StartCoroutine(ReduceSlideForce(slide, slowAmount * 0.5f, duration));
@@ -40,12 +50,13 @@ public class SlowPad : MonoBehaviour
 
         yield return new WaitForSeconds(duration);
 
-        // Reset to normal
+        //reset to normal
         move.moveSpeed = baseSpeed;
 
         activeEffect = null;
     }
 
+    //reduce slideforce temporarily
     private IEnumerator ReduceSlideForce(Sliding slide, float reduceAmount, float duration)
     {
         slide.slideForce = Mathf.Max(1f, slide.slideForce - reduceAmount);
