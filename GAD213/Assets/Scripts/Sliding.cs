@@ -21,7 +21,7 @@ public class Sliding : MonoBehaviour
     private float desiredMoveSpeed;
     private float lastDesiredMoveSpeed;
     public float slideSpeed;
-    public float slideJumpWindow = 0.2f;  // how long after a slide you can do a boosted jump
+    public float slideJumpWindow = 0.2f;
     public bool canSlideJump;
     private float slideJumpTimer;
     void Start()

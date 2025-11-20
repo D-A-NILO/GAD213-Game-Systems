@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class MovementSystem : MonoBehaviour
@@ -32,6 +33,7 @@ public class MovementSystem : MonoBehaviour
     public float baseSpeed;
     private Sliding slide;
     public float slideJumpBoost = 1.5f;
+    public TextMeshProUGUI speedText;
 
     void Start()
     {
@@ -76,6 +78,7 @@ public class MovementSystem : MonoBehaviour
         if (grounded && jumpsLeft < maxJumps)
             jumpsLeft = maxJumps;
 
+        UpdateSpeed();
     }
 
     private void FixedUpdate()
@@ -161,7 +164,7 @@ public class MovementSystem : MonoBehaviour
             }
         }
         //limit speed on ground or in air
-        else 
+        else
         {
             Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
 
@@ -236,5 +239,10 @@ public class MovementSystem : MonoBehaviour
             isSlamming = false;
             rb.AddForce(orientation.forward * moveSpeed * 2f, ForceMode.Impulse);
         }
+    }
+
+    void UpdateSpeed()
+    {
+            speedText.text = "Speed: " + moveSpeed.ToString("0.0");
     }
 }
