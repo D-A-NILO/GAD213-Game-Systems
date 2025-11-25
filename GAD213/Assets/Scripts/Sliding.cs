@@ -75,14 +75,14 @@ public class Sliding : MonoBehaviour
         //sliding on flat ground
         if (!playerMovement.OnSlope() || rb.velocity.y > -0.1f)
         {
-            rb.AddForce(inputDirection.normalized * slideForce, ForceMode.Force);
+            rb.AddForce(inputDirection.normalized * slideForce * (playerMovement.moveSpeed), ForceMode.Force);
 
             
         }
         //sliding down a slope
         else
         {
-            rb.AddForce(playerMovement.GetSlopeMovementDirection(inputDirection) * slideForce, ForceMode.Force);
+            rb.AddForce(playerMovement.GetSlopeMovementDirection(inputDirection) * slideForce * (playerMovement.moveSpeed), ForceMode.Force);
         }
 
         if (playerMovement.OnSlope() && rb.velocity.y < 0.1f)

@@ -34,6 +34,8 @@ public class MovementSystem : MonoBehaviour
     private Sliding slide;
     public float slideJumpBoost = 1.5f;
     public TextMeshProUGUI speedText;
+    private bool justLandedFromSlam = false;
+    private float slamLandingTimer = 0.2f; // 0.2 seconds of momentum buffer
 
     void Start()
     {
@@ -51,7 +53,21 @@ public class MovementSystem : MonoBehaviour
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, ground);
         //movement function
         MovementInput();
-        SpeedControl();
+        if (isSlamming)
+        {
+            // still falling
+        }
+        else if (justLandedFromSlam)
+        {
+            slamLandingTimer -= Time.deltaTime;
+            if (slamLandingTimer <= 0)
+                justLandedFromSlam = false;
+        }
+        else
+        {
+            SpeedControl(); // only clamp if not slamming or in buffer
+        }
+
         //handle drag
         if (grounded)
         {
@@ -60,7 +76,11 @@ public class MovementSystem : MonoBehaviour
         else 
         {
             rb.drag = 0;
-            rb.AddForce(Vector3.down * 4f, ForceMode.Force);
+            if (!grounded && !isSlamming)
+            {
+                rb.AddForce(Vector3.down * 4f, ForceMode.Force);
+            }
+            
         }
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, ground);
 
@@ -71,7 +91,22 @@ public class MovementSystem : MonoBehaviour
         if (isSlamming && grounded)
         {
             isSlamming = false;
-            
+            justLandedFromSlam = true;
+            slamLandingTimer = 0.2f; // buffer for momentum
+
+            rb.useGravity = true;
+
+            // Keep vertical velocity zero but allow horizontal movement
+            rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+
+            // REDUCED DRAG so player doesn't immediately stop
+            rb.drag = groundDrag * 0.3f;
+
+            // Give a small horizontal push in the forward direction
+            Vector3 horizontalForward = orientation.forward;
+            horizontalForward.y = 0;
+            horizontalForward.Normalize();
+            rb.AddForce(horizontalForward * moveSpeed * 1.5f, ForceMode.VelocityChange);
         }
 
         //reset jumps when grounded
@@ -228,7 +263,8 @@ public class MovementSystem : MonoBehaviour
     private void StartSlam()
     {
         isSlamming = true;
-        rb.velocity = new Vector3(0, -slamForce, 0); 
+        rb.drag = 0;
+        rb.velocity = new Vector3(rb.velocity.x * 0.2f, -slamForce, rb.velocity.z * 0.2f);
     }
 
     //can cancel the slam with slide
@@ -239,6 +275,24 @@ public class MovementSystem : MonoBehaviour
             isSlamming = false;
             rb.AddForce(orientation.forward * moveSpeed * 2f, ForceMode.Impulse);
         }
+    }
+
+    public void EndSlam()
+    {
+        isSlamming = false;
+
+        // Reset downward velocity
+        rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+
+        // Push player slightly up so they don't get embedded
+        rb.position += Vector3.up * 0.1f;
+
+        // FIX: Restore horizontal momentum so player can move again
+        Vector3 forward = orientation.forward;
+        forward.y = 0;
+        forward.Normalize();
+
+        rb.AddForce(forward * moveSpeed * 2f, ForceMode.Impulse);
     }
 
     void UpdateSpeed()
