@@ -24,6 +24,8 @@ public class Sliding : MonoBehaviour
     public float slideJumpWindow = 0.2f;  // how long after a slide you can do a boosted jump
     public bool canSlideJump;
     private float slideJumpTimer;
+    public float slideDamageMultiplier = 2f;
+    public float slideDamageBoost = 1f;
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -147,5 +149,12 @@ public class Sliding : MonoBehaviour
         slideForce += extraForce; // increase slide force
         yield return new WaitForSeconds(duration);
         slideForce -= extraForce; // revert back to normal
+    }
+
+    public IEnumerator BoostSlideDamage(float multiplier, float duration)
+    {
+        slideDamageBoost = multiplier;
+        yield return new WaitForSeconds(duration);
+        slideDamageBoost = 1f; // reset
     }
 }

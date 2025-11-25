@@ -45,6 +45,8 @@ public class SpeedPad : MonoBehaviour, IInteractable
         if (slide != null && slide.sliding)
         {
             slide.BoostSlide(speedBoost * 0.5f, duration);
+
+            StartCoroutine(slide.BoostSlideDamage(1.5f, duration));
         }
 
         yield return new WaitForSeconds(duration);
