@@ -5,7 +5,7 @@ using UnityEngine;
 public class Enemy : MonoBehaviour, IDamaegable
 {
     public float health = 100f;
-    public float slamDamageMultiplier = 3f;  // damage per unit of slam speed
+    public float slamDamageMultiplier = 3f; 
 
     public void TakeDamage(float amount)
     {
@@ -40,7 +40,7 @@ public class Enemy : MonoBehaviour, IDamaegable
 
         if (movement != null && movement.isSlamming)
         {
-            float verticalSpeed = Mathf.Abs(playerRb.velocity.y); // only vertical speed
+            float verticalSpeed = Mathf.Abs(playerRb.velocity.y);
             float damage = verticalSpeed * slamDamageMultiplier;
             damage = Mathf.Clamp(damage, minDamage, maxDamage);
             TakeDamage(damage);
