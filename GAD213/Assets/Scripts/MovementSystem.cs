@@ -35,7 +35,8 @@ public class MovementSystem : MonoBehaviour
     public float slideJumpBoost = 1.5f;
     public TextMeshProUGUI speedText;
     private bool justLandedFromSlam = false;
-    private float slamLandingTimer = 0.2f; // 0.2 seconds of momentum buffer
+    private float slamLandingBuffer = 0.2f; // 0.2 seconds of momentum buffer
+    Vector3 slamMomentum;
 
     void Start()
     {
@@ -53,21 +54,22 @@ public class MovementSystem : MonoBehaviour
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, ground);
         //movement function
         MovementInput();
-        if (isSlamming)
+        if (!justLandedFromSlam)
         {
-            // still falling
+            SpeedControl();
         }
-        else if (justLandedFromSlam)
+        // Handle slam landing buffer
+        if (justLandedFromSlam)
         {
-            slamLandingTimer -= Time.deltaTime;
-            if (slamLandingTimer <= 0)
-                justLandedFromSlam = false;
-        }
-        else
-        {
-            SpeedControl(); // only clamp if not slamming or in buffer
-        }
+            rb.AddForce(slamMomentum, ForceMode.VelocityChange);
 
+            slamLandingBuffer -= Time.deltaTime;
+            if (slamLandingBuffer <= 0f)
+            {
+                justLandedFromSlam = false;
+                rb.drag = groundDrag; // restore drag
+            }
+        }
         //handle drag
         if (grounded)
         {
@@ -92,21 +94,15 @@ public class MovementSystem : MonoBehaviour
         {
             isSlamming = false;
             justLandedFromSlam = true;
-            slamLandingTimer = 0.2f; // buffer for momentum
+            slamLandingBuffer = 0.2f;
 
-            rb.useGravity = true;
-
-            // Keep vertical velocity zero but allow horizontal movement
             rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-
-            // REDUCED DRAG so player doesn't immediately stop
             rb.drag = groundDrag * 0.3f;
 
-            // Give a small horizontal push in the forward direction
             Vector3 horizontalForward = orientation.forward;
             horizontalForward.y = 0;
             horizontalForward.Normalize();
-            rb.AddForce(horizontalForward * moveSpeed * 1.5f, ForceMode.VelocityChange);
+            slamMomentum = horizontalForward * moveSpeed * 1.5f;
         }
 
         //reset jumps when grounded
