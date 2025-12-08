@@ -32,6 +32,13 @@ public class MovementSystem : MonoBehaviour
     public float baseSpeed;
     private Sliding slide;
     public float slideJumpBoost = 1.5f;
+    public float slamRadius = 5f;
+    public float slamDamageMultiplier = 3f;
+    bool canSlamJump = false;
+    float slamJumpTimer = 0f;
+    public float slamJumpWindow = 0.2f; // how long after landing you can jump
+    public float slamJumpBoost = 15f;   // extra upward force
+
 
     void Start()
     {
@@ -69,7 +76,19 @@ public class MovementSystem : MonoBehaviour
         if (isSlamming && grounded)
         {
             isSlamming = false;
-            
+            SlamAOE();
+            canSlamJump = true;
+            slamJumpTimer = slamJumpWindow;
+        }
+
+        if (canSlamJump)
+        {
+            slamJumpTimer -= Time.deltaTime;
+
+            if (slamJumpTimer <= 0)
+            {
+                canSlamJump = false;
+            }
         }
 
         //reset jumps when grounded
@@ -94,28 +113,17 @@ public class MovementSystem : MonoBehaviour
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical");
 
-        //when to jump
-        if (Input.GetKey(jumpKey) && readyToJump && grounded)
-        { 
-            readyToJump = false;
-
-            Jump();
-
-            Invoke(nameof(ResetJump), jumpCooldown);
-        }
-
-        // Ground Slam input
-        if (Input.GetKeyDown(slamKey) && !grounded)
-        {
-            StartSlam();
-        }
-
-        //double jump input
+        // Jump input
         if (Input.GetKeyDown(jumpKey) && readyToJump && jumpsLeft > 0)
         {
             readyToJump = false;
             Jump();
             Invoke(nameof(ResetJump), jumpCooldown);
+        }
+        // Ground Slam input
+        if (Input.GetKeyDown(slamKey) && !grounded)
+        {
+            StartSlam();
         }
     }
 
@@ -144,6 +152,7 @@ public class MovementSystem : MonoBehaviour
                 rb.AddForce(Vector3.down * 80f, ForceMode.Force);
             }
         }
+
 
         //turn off gravity on a slop
         rb.useGravity = !OnSlope();
@@ -186,10 +195,10 @@ public class MovementSystem : MonoBehaviour
         float finalJumpForce = jumpForce;
 
         // If player recently stopped sliding, boost their jump
-        if (slide != null && slide.canSlideJump)
+        if (canSlamJump)
         {
-            finalJumpForce *= slideJumpBoost;
-            slide.canSlideJump = false; // use it once
+            finalJumpForce *= slamJumpBoost;
+            canSlamJump = false;
         }
 
         rb.AddForce(Vector3.up * finalJumpForce, ForceMode.Impulse);
@@ -225,7 +234,12 @@ public class MovementSystem : MonoBehaviour
     private void StartSlam()
     {
         isSlamming = true;
-        rb.velocity = new Vector3(0, -slamForce, 0); 
+        Vector3 currentVel = rb.velocity;
+
+        // keep horizontal speed, replace only vertical
+        currentVel.y = -slamForce;
+
+        rb.velocity = currentVel;
     }
 
     //can cancel the slam with slide
@@ -235,6 +249,27 @@ public class MovementSystem : MonoBehaviour
         {
             isSlamming = false;
             rb.AddForce(orientation.forward * moveSpeed * 2f, ForceMode.Impulse);
+        }
+    }
+
+    private void SlamAOE()
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position, slamRadius);
+
+        foreach (Collider hit in hits) 
+        {
+            Enemy enemy = hit.GetComponent<Enemy>();
+            if (enemy != null) 
+            {
+                float minDamage = 5f;
+                float maxDamage = 10f;
+                float verticalSpeed = Mathf.Abs(rb.velocity.y);
+                float damage = verticalSpeed * slamDamageMultiplier;
+                damage = Mathf.Clamp(damage, minDamage, maxDamage);
+                enemy.TakeDamage(damage);
+                Debug.Log($"enemy took slam {damage}");
+                enemy.SlamKnockUp();
+            }
         }
     }
 }
